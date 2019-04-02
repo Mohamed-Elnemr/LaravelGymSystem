@@ -21,28 +21,17 @@ use Carbon\Carbon;
 
 class TraineeController extends Controller
 {
-    public function index()
-    {
-
-        return TraineeResource::collection(Trainee::all());
-
-    }
+    //-------------------------- Trainee create Session and check for its data and his balance ----------------------- //
 
     public function create($id)
     {
-        $dateNow = Carbon::today();
         $trainee=\auth()->user();
         $session=TrainingSession::find($id);
         if ($session)  {
-            if (Carbon::parse(TrainingSession::find($id)->date_of_session)->eq($dateNow)) {
+            if (this.$this->checkDate($id)) {
                 $gym=Gym::where('id',$session->id)->first();
                 $city=City::where('id',$gym->city_id)->first();
-                if(TrainingPackagePurchase::where('trainee_id',$trainee->id)->first()){
-                    $purchasedPackage=TrainingPackagePurchase::where('trainee_id',$trainee->id)->first();
-                    $packageCapacity=TrainingPackage::where('id',$purchasedPackage->package_id)->first()->capacity;
-                    $remainingSessions=$packageCapacity-$trainee->attended_sessions;
-                }else{ $purchasedPackage=null ;}
-                if( $purchasedPackage && $remainingSessions >0 ){
+                if(this.$this->checkBalance($trainee)){
                     $attendance = new AttendanceUser();
                     $attendance->user_id = $trainee->id;
                     $attendance->session_id = $id;
@@ -68,7 +57,33 @@ class TraineeController extends Controller
             return response()->json(['message' => 'Error Session ID']);
         }
     }
+    // ------------------ Check Date of the Session ----------------------------------- //
+    public function checkDate($id){
+        $dateNow = Carbon::today();
+        if (Carbon::parse(TrainingSession::find($id)->date_of_session)->eq($dateNow)){
+            return true ;
+        }else{
+            return false;
+        }
 
+    }
+    // ---------------------------- Check Balance of the trainee -------------------------- //
+    public function checkBalance($trainee)
+    {
+        if (TrainingPackagePurchase::where('trainee_id', $trainee->id)->first()) {
+            $purchasedPackage = TrainingPackagePurchase::where('trainee_id', $trainee->id)->first();
+            $packageCapacity = TrainingPackage::where('id', $purchasedPackage->package_id)->first()->capacity;
+            $remainingSessions = $packageCapacity - $trainee->attended_sessions;
+            if ($purchasedPackage && $remainingSessions > 0) {
+                return true;
+
+            } else {
+                return false;
+            }
+        }
+    }
+
+    // ------------------------- Show trainee packages and remaining sessions ------------------- //
     public function show(){
         $trainee=\auth()->user();
         $purchasedPackage=TrainingPackagePurchase::where('trainee_id',$trainee->id)->first()->package_id;
@@ -81,6 +96,7 @@ class TraineeController extends Controller
 
     }
 
+    // ------------ Show history of sessions and attendance --------------------------//
     public function showHistory(){
         $trainee=\auth()->user();
         $attendedSessions=AttendanceUser::where('user_id',$trainee->id)->get()->toArray();

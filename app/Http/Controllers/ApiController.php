@@ -51,46 +51,34 @@ class ApiController extends Controller
 {
     $input = $request->only('email', 'password');
     if (auth('api')->attempt([
-        'email' => $request->input('email'),
-        'password' => $request->input('password')
-    ])) {
-        $user = auth('api')->user();
-        $user->last_login = Carbon::now();
-        $jwt_token = auth('api')->attempt($input);
-    {   $input = $request->only('email', 'password');
-        if (auth('api')->attempt([
             'email'=>$request->input('email'),
-            'password'=>$request->input('password')
-        ])) {
+            'password'=>$request->input('password')]))
+         {
              $user=auth('api')->user();
              if (!$user->confirmed) {
-             auth()->logout();
-            return response()->json([
-                    'message'=>'You need to confirm your account. We have sent you an activation code, please check your email.',]);}
+                 auth()->logout();
+                     return response()->json([
+                    'message'=>'You need to confirm your account. We have sent you 
+                            an activation code, please check your email.',]);
+             }
             $user->last_login=Carbon::now();
             $jwt_token=auth('api')->attempt($input);
             $user->save();
             return response()->json([
                     'success'=>true,
                     'user'=>$user,
-                    'token'=>$jwt_token,]); }
-
-        $user->save();
-        return response()->json([
-            'success' => true,
-            'user' => $user,
-            'token' => $jwt_token,
-        ]);
-    }
-
+                    'token'=>$jwt_token,]);
+         }
     if (!$jwt_token = auth('api')->attempt($input)) {
         return response()->json([
             'success' => false,
             'message' => 'Invalid Email or Password',
         ], 401);
     }
-}
-}
+
+    }
+
+
 
 //------------------------- Verify User -----------------------------------------
 
